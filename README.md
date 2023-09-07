@@ -153,4 +153,7 @@ CONTAINER ID   IMAGE                              COMMAND                  CREAT
 48c58b8391b7   example/docker-node-hello:latest   "docker-entrypoint.s…"   2 minutes ago   Up 2 minutes   0.0.0.0:8080->8080/tcp, :::8080->8080/tcp   stupefied_heyrovsky
 ```
 
+Let's check it in browser :
+
+<img width="272" alt="image" src="https://github.com/Galser/duar-01/assets/914404/3dd3dd17-dffd-4690-838c-635dc9cac632">
 
