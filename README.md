@@ -234,3 +234,24 @@ ea8ab45f064e: Mounted from library/node
 latest: digest: sha256:4afe2d1d903164fdc80d11d6c3a58480f690bab00af2c0a01ecf8028383d643f size: 3264
 ```
 
+## Keeping Images Small 
+
+Demo : 
+```
+docker run -d -p 8080:8080 adejonge/helloworld
+```
+
+Which ..fails on my arc, tested it in another place.\
+
+But - interesting to look around another , classic minimal image : 
+
+```
+docker run -ti alpine:latest /bin/sh
+```
+
+Reminder , Since we are using Docker Community Edition, we need to use our nsenter trick to enter the SSH-less virtual machine and explore the filesystem.
+
+```
+$ docker run -it --privileged --pid=host debian nsenter -t 1 -m -u -n -i sh
+```
+
