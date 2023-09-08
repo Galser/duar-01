@@ -1,6 +1,9 @@
 # duar-01
 DUAR - Docker Up And Running - 01. Follow-along exercises from the book
 
+
+>> note - I am runniong Docker via Colima on MacOS 
+
 # Docker-node-hello
 
 Steps : 
@@ -156,4 +159,78 @@ CONTAINER ID   IMAGE                              COMMAND                  CREAT
 Let's check it in browser :
 
 <img width="272" alt="image" src="https://github.com/Galser/duar-01/assets/914404/3dd3dd17-dffd-4690-838c-635dc9cac632">
+
+
+## Env vars at run 
+
+```
+docker run -d -p 8080:8080 -e WHO="Andrii" \
+        example/docker-node-hello:latest
+```
+
+## Tagging before upload to public registry
+
+- Post-build : 
+
+```
+docker tag example/docker-node-hello:latest \
+        ${<myuser>}/docker-node-hello:latest
+```
+
+- or during built : 
+
+```
+docker build -t ${<myuser>}/docker-node-hello:latest .
+```
+
+but that presumed Linux + Bash Docker installation. 
+
+So for modern M1/M2 hardware MacOS-based install, running Colima correct way is to defiend your won env variable and proceed with it : 
+
+```
+export DOCKER_HUB_USER=XUSERDOCKER
+docker tag example/docker-node-hello:latest \
+        ${DOCKER_HUB_USER}/docker-node-hello:latest
+```
+
+Let's check it : 
+
+```
+ docker images
+REPOSITORY                    TAG       IMAGE ID       CREATED        SIZE
+example/docker-node-hello     latest    cbc04243a50d   23 hours ago   973MB
+XUSERDOCKER/docker-node-hello   latest    cbc04243a50d   23 hours ago   973MB
+node                          18.13.0   b0cef62e0901   8 months ago   945MB
+```
+
+## Pushin to a public Docker repo
+
+Upload the image to the Docker repository by using the docker push command, classic instalaltion : 
+
+```
+$ docker push ${<myuser>}/docker-node-hello:latest
+```
+
+My option : 
+
+
+```
+docker push ${DOCKER_HUB_USER}/docker-node-hello:latest
+The push refers to repository [docker.io/XUSERDOCKER/docker-node-hello]
+728213049d97: Pushed
+392ecd7d2512: Pushed
+7c9112f9a9d7: Pushed
+d9ac0a0c2340: Pushed
+902e1d792777: Pushed
+a69fed3eae3a: Mounted from library/node
+cce7d50540ad: Mounted from library/node
+0c176246eb1d: Mounted from library/node
+1e80eaad2549: Mounted from library/node
+15b65600aa80: Mounted from library/node
+85f9ebffaf4d: Mounted from library/node
+72235aad06ad: Mounted from library/node
+5d37ad02a8e2: Mounted from library/node
+ea8ab45f064e: Mounted from library/node
+latest: digest: sha256:4afe2d1d903164fdc80d11d6c3a58480f690bab00af2c0a01ecf8028383d643f size: 3264
+```
 
