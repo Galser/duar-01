@@ -234,3 +234,69 @@ ea8ab45f064e: Mounted from library/node
 latest: digest: sha256:4afe2d1d903164fdc80d11d6c3a58480f690bab00af2c0a01ecf8028383d643f size: 3264
 ```
 
+## Keeping Images Small 
+
+Demo : 
+```
+docker run -d -p 8080:8080 adejonge/helloworld
+```
+
+Which ..fails on my arc, tested it in another place.\
+
+But - interesting to look around another , classic minimal image : 
+
+```
+docker run -ti alpine:latest /bin/sh
+```
+
+Reminder , Since we are using Docker Community Edition, we need to use our nsenter trick to enter the SSH-less virtual machine and explore the filesystem.
+
+```
+$ docker run -it --privileged --pid=host debian nsenter -t 1 -m -u -n -i sh
+```
+
+##  Layers are additive 
+Something that is not apparent until you dig much deeper into how images are built is that the filesystem layers that make up your images are strictly additive in nature.
+
+
+So image created from this Dockerfile : 
+
+```
+FROM fedora
+RUN dnf install -y httpd && \
+    dnf clean all
+CMD ["/usr/sbin/httpd", "-DFOREGROUND"]
+```
+
+
+Going to be smaller than : 
+
+```
+FROM fedora
+RUN dnf install -y httpd
+RUN dnf clean all
+CMD ["/usr/sbin/httpd", "-DFOREGROUND"]
+```
+
+due to fact that DNF cache was already ADDED .. remmeber? Layers are additive. 
+
+
+Here is how `docker history` for the optimized`image (frist one) would look like : 
+
+```
+docker history size3
+IMAGE          CREATED          CREATED BY                                      SIZE      COMMENT
+0168584dae0b   30 seconds ago   /bin/sh -c #(nop)  CMD ["/usr/sbin/httpd" "-…   0B
+f23e2484f5ee   30 seconds ago   /bin/sh -c dnf install -y httpd &&     dnf c…   79.6MB
+f838063d816c   4 weeks ago      /bin/sh -c #(nop)  CMD ["/bin/bash"]            0B
+<missing>      4 weeks ago      /bin/sh -c #(nop) ADD file:50785841137152691…   274MB
+<missing>      10 months ago    /bin/sh -c #(nop)  ENV DISTTAG=f38container …   0B
+<missing>      10 months ago    /bin/sh -c #(nop)  LABEL maintainer=Clement …   0B
+```
+
+## Optimizing build sepped ( opt for Docker cache)
+
+Detailed : [cache-optimize-01/README.MD]
+
+
+
