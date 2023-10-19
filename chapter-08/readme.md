@@ -17,3 +17,4 @@ export DOCKER_HOST="unix://$HOME/.colima/docker.sock"
 brew install docker-compose
 ```
 
+Rocket chat compose in current version ( 16 Oct 2023 ) contains some errors. Need external volume.
