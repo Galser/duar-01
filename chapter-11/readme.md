@@ -286,4 +286,46 @@ If we take a look at the default seccomp profile, we’ll see something like thi
 You could completely disable the default Secure Computing Mode profile by setting --securityopt=seccomp:unconfined, however running a container unconfined is a very bad idea in general, and is probably only useful when you are trying to figure out exactly what system calls you need to define in your profile.
 
 
-        
+## Configuring networks
+
+There is more to networking than just the default network or host networking, how‐ ever. The docker network command lets you create multiple networks backed by dif‐ ferent drivers. It also allows you to view and manipulate the Docker network layers and how they are attached to containers that are running on the system.
+
+
+Listing the networks available from Docker’s perspective is easily accomplished with the following command:
+
+```
+docker network ls
+NETWORK ID     NAME             DRIVER    SCOPE
+73a9bcec70c3   bridge           bridge    local
+7cbeb7e13774   compose_botnet   bridge    local
+b3dd6213c4b2   host             host      local
+f171c80e16ec   none             null      local
+```
+
+
+## Storage
+
+Backing all of the images and containers on your Docker server is a storage backend that handles reading and writing all of that data. Docker has some strenuous require‐ ments on its storage backend: it has to support layering, the mechanism by which Docker tracks changes and reduces both how much disk a container occupies and how much is shipped over the wire to deploy new images. Using a copy-on-write strategy, Docker can start up a new container from an existing image without having to copy the whole image. The storage backend supports that.
+
+### Overlay
+Overlay (formerly OverlayFS) is a union filesystem where multiple layers are mounted together so that they appear as a single filesystem. This is the most rec‐ ommended driver these days and works on most major distributions. If you are running on a Linux kernel older than 4.0 (or 3.10.0-693 for CentOS/RHEL), then you won’t be able to take advantage of this backend. The reliability and perfor‐ mance are good enough that it might be worth updating your OS for Docker hosts in order to support it, even if your company standard is an older distribu‐ tion. Overlay is part of the mainline Linux kernel and has become increasingly stable over time. Being in the mainline means that long-term support is virtually guaranteed, which is another nice advantage. Docker supports two versions of the Overlay backend, overlay and overlay2. As you might expect, you are strongly advised to use overlay2 as it is faster, more efficient with inode usage, and more robust.
+
+### AuFS
+Although at the time of this writing it is no longer recommended, aufs is the original backend. AuFS is a union filesystem driver with reasonable support on various popular Linux distributions. It was never accepted into the mainline ker‐ nel, however, and this has limited its availability on various distributions. It is not supported on recent versions of Red Hat, Fedora, or CentOS, for example. It is not shipped in the standard Ubuntu distribution, but is in the Ubuntu linux- image-extra package.
+Its status as a second-class citizen in the kernel has led to the development of many of the other backends now available. If you are running an older distribu‐ tion that supports AuFS, you might consider it for stability but you should really upgrade to a kernel version that natively supports Overlay or Btrfs (discussed next).
+
+### Btrfs
+Btrfs is fundamentally a copy-on-write filesystem, which means it’s a pretty good fit for the Docker image model. Like aufs and unlike devicemapper, Docker is using the backend in the way it was intended. That means it’s both pretty stable in production and also a good performer. It scales reasonably to thousands of containers on the same system. A drawback for Red Hat–based systems is that Btrfs does not support SELinux. If you can use the btrfs backend, we currently recommend it as one of the most stable backends for production, after the over lay2 driver. One popular way to run btrfs backends for Docker containers without having to give over a whole volume to this somewhat prerelease filesys‐ tem is to make a Btrfs filesystem in a file and loopback-mount it with something like mount -o loop file.btrs /mnt. Using this method, you could build a 50 GB Docker container storage filesystem even on cloud-based systems without having to give over all your precious local storage to Btrfs.
+
+### Device Mapper
+Originally written by Red Hat to support their distributions, which lacked AuFS in Docker’s early days, Device Mapper has become the default backend on all Red Hat–based distributions of Linux. If you run Docker Enterprise Edition or the commercially supported release on a Red Hat OS, this is your only option. Device Mapper itself has been built into the Linux kernel for ages and is very stable. The way the Docker daemon uses it is a bit unconventional, though, and in the past this backend was not that stable. This checkered past means that we prefer to pick a different backend when possible. If your distribution supports only the devicemapper driver, then you will likely be fine. But it’s worth considering using overlay2 or btrfs. By default, devicemapper utilizes the loop-lvm mode, which has zero configuration, but it is very slow and useful only for development. If you decide to use the devicemapper driver, it is very important that you make sure it is configured to use direct-lvm mode for all nondevelopment environments.
+
+### VFS
+The Virtual File System (vfs) driver is the simplest, and slowest, to start up of the supported drivers. It doesn’t really support copy-on-write. Instead, it makes a new directory and copies over all of the existing data. It was originally intended for use in tests and for mounting host volumes. The vfs driver is very slow to create new containers, but runtime performance is native, which is a real benefit. Its mechanism is very simple, which means there is less to go wrong. Docker, Inc., does not recommend it for production use, so proceed with caution if you think it’s the right solution for your production environment.
+ZFS
+ZFS, originally created by Sun Microsystems, is the most advanced open source filesystem available on Linux. Due to licensing restrictions, it does not ship in mainline Linux. However, the ZFS On Linux project has made it pretty easy to install. Docker can then run on top of the ZFS filesystem and use its advanced copy-on-write facilities to implement layering. Given that ZFS is not in the main‐ line kernel and not available off the shelf in the major commercial distributions, however, going this route requires some extended effort. If you are already run‐ ning ZFS in production, however, then this is probably your very best option.
+
+
+
+## The Structure of Docker
+What we think of as Docker is made of five major server-side components that present a common front via the API. These parts are dockerd, containerd, runc, docker-containerd-shim, and the docker-proxy
